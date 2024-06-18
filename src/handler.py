@@ -81,7 +81,8 @@ def handler(job):
         audio_file_path = download_file(audio_url, 'downloaded_audio.wav')
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-            temp_audio_file_path = tmp_file.name
+            temp_audio_file_path = tmp_file.name + \
+                audio_file_path.split(".")[-1]
 
         try:
             # Run ffmpeg command
