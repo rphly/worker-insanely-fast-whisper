@@ -1,5 +1,7 @@
 """ Example handler file. """
 
+import subprocess
+import tempfile
 import runpod
 import requests
 import os
@@ -78,11 +80,29 @@ def handler(job):
         # Download the audio file
         audio_file_path = download_file(audio_url, 'downloaded_audio.wav')
 
-        # Run Whisper model inference
-        result = run_whisper_inference(
-            audio_file_path, chunk_length, batch_size, language, task)
-        # Cleanup: Remove the downloaded file
-        os.remove(audio_file_path)
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            temp_audio_file_path = tmp_file.name
+
+        try:
+            # Run ffmpeg command
+            subprocess.run(
+                ["ffmpeg", "-i", audio_file_path, "-movflags",
+                    "faststart", temp_audio_file_path],
+                check=True
+            )
+
+            # Move the temporary file to the original path
+            os.replace(temp_audio_file_path, audio_file_path)
+
+            # Run Whisper model inference
+            result = run_whisper_inference(
+                audio_file_path, chunk_length, batch_size, language, task
+            )
+        finally:
+            # Cleanup: Remove the downloaded file
+            os.remove(audio_file_path)
+            if os.path.exists(temp_audio_file_path):
+                os.remove(temp_audio_file_path)
 
         return result
     else:
