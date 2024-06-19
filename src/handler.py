@@ -24,9 +24,9 @@ def download_file(url, local_filename):
     return local_filename
 
 
-def run_whisper_inference(audio_path, chunk_length, batch_size, language, task):
+def run_whisper_inference(model_name, audio_path, chunk_length, batch_size, language, task):
     """Run Whisper model inference on the given audio file."""
-    model_id = "openai/whisper-large-v3"
+    model_id = f"openai/whisper-{model_name}"
     torch_dtype = torch.float16
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model_cache = "/cache/huggingface/hub"
@@ -73,6 +73,7 @@ def handler(job):
     audio_url = job_input["audio"]
     chunk_length = job_input["chunk_length"]
     batch_size = job_input["batch_size"]
+    model = job_input["model"] if "model" in job_input else "large-v3"
     language = job_input["language"] if "language" in job_input else None
     task = job_input["task"] if "task" in job_input else "transcribe"
 
@@ -97,8 +98,7 @@ def handler(job):
 
             # Run Whisper model inference
             result = run_whisper_inference(
-                audio_file_path, chunk_length, batch_size, language, task
-            )
+                model, audio_file_path, chunk_length, batch_size, language, task)
         finally:
             # Cleanup: Remove the downloaded file
             os.remove(audio_file_path)
